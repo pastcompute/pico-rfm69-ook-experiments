@@ -1,0 +1,5 @@
+add_subdirectory(../lib/compat/arduino-compat build_ac)
+include(../lib/RadioHead.cmake)
+add_subdirectory(compat-test)
+add_subdirectory(version)
+add_subdirectory(ook-demod)
