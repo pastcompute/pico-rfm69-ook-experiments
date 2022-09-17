@@ -24,7 +24,7 @@
 
 // With the arduino-compat shim, Arduino pins Dn is exactly the same as Pico SDK pin GPn
 
-// I adopt one pin to intentiopnally trigger the logic analyser when the program starts,
+// I adopt one pin to intentionally trigger the logic analyser when the program starts,
 // this can be useful at times
 
 #define LOGIC_TRIGGER D16
@@ -128,7 +128,7 @@ int main() {
     dmap2 = (dmap2 & 0x38) | 5; // Clock out frequency bits 0-2 --> 101, DIO5 bits 7-6 --> 00 == clock 
     rf69module.spiWrite(RH_RF69_REG_26_DIOMAPPING2, dmap2);
 
-    // With a good guess oof the RSSI threshold value ESTIMATED_TRIGGER_RSSI_DB
+    // With a good guess of the RSSI threshold value ESTIMATED_TRIGGER_RSSI_DB
     // it is not necessary to use the peak detector
     // However using the peak detector will eliminate junk beyond the valid transmissions
     // as well as right nearby
