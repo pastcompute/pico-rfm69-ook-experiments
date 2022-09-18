@@ -19,8 +19,13 @@ I had had a system doing this using `rtl_433` with a USB RTL-SDR, but I really d
 
 This screenshot shows PulseView successfully decoding a logic analyser capture of DIO2 from the module:
 
-![PulseView successfully decoding a logic analyser capture of DIO2 from the module](images/pulseview_oregon_decoded.png "PulseView Orecon Decoding")
+![PulseView successfully decoding a logic analyser capture of DIO2 from the module](images/pulseview_oregon_decoded.png "PulseView Oregon Decoding")
 
+This screenshot shows detections determined by polling the SX1231 RSSI value (using `apps/ook-scope` with only detections printed)
+![ook-scope output of detections determined by polling the SX1231 RSSI value](images/ook-scope.png "Output from ook-scope program")
+
+This screenshot shows the spectrum captured using RTL-SDR on Android using SDRTouch - the bandwidth is the white rectangle, 100kHz wide (50kHz either side of 433.92MHz) - and the yellow blob is the transmission, so the vertical axis where the transmission is, is approx 380ms - you can see how if the bandwidth had been only set to 20kHz wide all the energy would have been outside of it. The good thing about this arrangement is that the frequency of the energy can drift and it wont matter.
+![Spectrum of received OOK transmission](images/spectrum.jpg "Spectrum of received OOK transmission")
 
 # Code
 
@@ -47,7 +52,7 @@ An interesting observation, is that when the temperature and humidity is the sam
 the bits are all exactly the same - in my case with T=14.5C and H=75, there was exactly 160 long pulses and 305 short pulses
 and the decoded message was identical (unsurprisingly)
 
-The program `apps/ook-rssi-scope` is a tool that samples and produces data that can be used to chart the RSSI over time. When the signal is sufficient, this should correlate with the DIO2 output. It is basically an implementation of the concept described FIXME.
+The program `apps/ook-scope` is a tool that samples and produces data that can be used to chart the RSSI over time. When the signal is sufficient, this should correlate with the DIO2 output. It is basically an implementation of the concept described FIXME. With some work this could be used to produce a continuous chart of RSSI and plot detections over a longer period, useful for identifying other nearby transmitters by analysing the intervals.
 
 
 ## License
