@@ -9,6 +9,11 @@
 #include <pico/stdlib.h>
 #include "../rfm69common.h"
 
+// Set this to 1 to print every sample binned, otherwise it only prints
+// when > 1 point above the long term background
+#define PRINT_ALL_VALUES 0
+
+
 // See ook-demod for a description of these common constants
 
 #define LOGIC_TRIGGER D16
@@ -99,12 +104,20 @@ int main() {
 
         // And this is not using a real time O/S, so perhaps this will delay the next sample slightly
         auto t1 = to_ms_since_boot(get_absolute_time());
-        printf("%8.2f %6.1f %6.1f    ", (t1 - t0) / 1000.F, longTermMean / (periods + 1), energyProxy);
 
-        // Bin this into 5dB slots from -127
-        int nx = (energyProxy + 127.5) / 5;
-        for (int i=0; i < nx; i++) { printf("*"); } printf("\n");
+        float background = longTermMean / (periods + 1);
 
+        bool detection = energyProxy - background > 1;
+
+        if (periods > 1 && detection) {
+            printf("%8.2f %6.1f %6.1f    ", (t1 - t0) / 1000.F, background, energyProxy);
+
+            // Bin this into 5dB slots from -127
+            int nx = (energyProxy + 127.5) / 5;
+            for (int i=0; i < nx; i++) { printf("*"); } printf("\n");
+        } else if (periods < 1) { 
+            printf("%8.2f %6.1f (initial integration)\n", (t1 - t0) / 1000.F, background);
+        }
         tNextOutput = delayed_by_us(tNow, nextOutput_us);
         runningSum = 0;
         runningCount = 0;
