@@ -29,6 +29,8 @@ This screenshot shows the spectrum captured using RTL-SDR on Android using SDRTo
 
 # Code
 
+The code is a bodged together mix of C and C++, I'm here to play with receivers, decoders and logic analysers not win a clean code contest...
+
 ## Demodulator testing
 
 The program `apps/ook-demod` is a tool that will trigger Sigrok when the RSSI passes some threshold.
@@ -53,6 +55,8 @@ the bits are all exactly the same - in my case with T=14.5C and H=75, there was 
 and the decoded message was identical (unsurprisingly)
 
 The program `apps/ook-scope` is a tool that samples and produces data that can be used to chart the RSSI over time. When the signal is sufficient, this should correlate with the DIO2 output. It is basically an implementation of the concept described FIXME. With some work this could be used to produce a continuous chart of RSSI and plot detections over a longer period, useful for identifying other nearby transmitters by analysing the intervals.
+
+The program `apps/oregon-decode` is hacked together from https://github.com/Cactusbone/ookDecoder which is a fork of https://github.com/phardy/WeatherStation, to decode the manchester coding and the packet values. One thing I noticed, is that the hex numbers are completely different from what PulseView shows, even though the end result is the same... oddly so far when I run this, it will pickup other junk packets, and for some reason every second, or two of three, packets are corrupted (this is packets on the 39s cadence) that otherwise are fine in Pulseview, so I think there might be a bug in the decoder (maybe on reset) - indeed there are some compiler warnings in relation to unused or invalid `switch` `case`'s so that might be a clue...
 
 
 ## License
