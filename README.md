@@ -4,7 +4,7 @@ This repo captures some of my experiments with an RFM69HCW and Raspberry Pico/Pi
 
 I'm probably repeating a lot of work others have done for years, albiet with a Raspberry Pico.
 
-End goal is to build a relay for forwarding Oregon weather sensor transmissions to MQTT using a Pico W.
+End goal is to build a relay for forwarding Oregon weather sensor transmissions to MQTT using a Pico W, or a Pico with serial.
 I had had a system doing this using `rtl_433` with a USB RTL-SDR, but I really didn't want to permanently tie that into my home automation system.
 (When I complete the MQTT forwarder I will put that project in a different repo, along with a tutorial for how the decoder works including, the RF side of things.)
 
@@ -13,6 +13,9 @@ I had had a system doing this using `rtl_433` with a USB RTL-SDR, but I really d
 - It is straightforward to use an RFM69HCW module (SX1231H chip) to demodulate Oregon weather sensor 433MHz ISM band transmissions
 - These can then be decoded using IRQ sampling of pulses and analysing the time difference between successive rising edges.
 - This should be adaptable to experiment with decoding other 'stuff' at 433Mhz using OOK (also known as ASK)
+- The Oregon THGN123N temperature and humidity sensor I was testing makes a transmission every apprpximately 39 seconds
+- It makes two transmissions each 187ms long with a gap of 10ms between them
+- Both are amenable to OOK manchester decoding in Sigrok however the second of this pair consistently always fails to decode as Oregon as there is an extra pulse decoded as binary 0 (short pulse) at the end of the preable
 
 This screenshot shows PulseView successfully decoding a logic analyser capture of DIO2 from the module:
 
@@ -29,31 +32,35 @@ When this program samples the SX1231 RSSI register and it is above the threshold
 with the OOK and Oregon decoders if recieving Oregon temperature sensor transmissions.
 Run sigrok-cli after the program has started, to ensure the trigger wont glitch on start.
 
-The program `apps/ook-timing` is a tool that will trigger Sigrok when the RSSI passes some threshold; and also
+The program `apps/ook-timing` is a tool that will trigger Sigrok when the RSSI passes a set threshold; and also
 lower that line when pulses are too long or too short. It uses an IRQ handler to time between both rising and falling
 edges on DIO2; Intact manchester coding will have pulses with either 1 or 2 chips width only, where a chip is
-(for Oregon 1024 bps) either 1/1024th of a second or 1/2048th of a second. This reults in the TRG line
-falling low before we get to our 400ms limit, and also between the message pair. You cana see in the logic analyser
+(for Oregon 1024 bps) either 1/1024th of a second or 1/2048th of a second. This correctly results in the TRG line
+falling low before we get to our 400ms limit, and also between the message pair. You can see in the logic analyser
 the exact lag between a transition and TRG; at one point when developing I was accidentally just impulsing the
-TRG line, and you could see slight offsets that reflect vriability in service time between the IRQ and the code
-pulsing TRG.
+TRG line, and you could see slight offsets that reflect variability in service time between the IRQ and the code
+pulsing TRG. Another thing this highlights is that sometimes the reception is slightly noising, resulting in a long pulse with a very narrow gap and second pulse, this is highlighted by TRG falling briefly mid message. I presume a real system handles this by just discarding the message, or, ignoring extra short gaps or pulses and attempting to continue.
+
+The second message in a pair consistently fails to decode in SigRok because there is always an extra pulse at the end of sync; if you manually inspect the data the remainder is actually correct. I dont know why this is the case.
 
 An interesting observation, is that when the temperature and humidity is the same between transmissions,
 the bits are all exactly the same - in my case with T=14.5C and H=75, there was exactly 160 long pulses and 305 short pulses
 and the decoded message was identical (unsurprisingly)
 
+The program `apps/ook-rssi-scope` is a tool that samples and produces data that can be used to chart the RSSI over time. When the signal is sufficient, this should correlate with the DIO2 output. It is basically an implementation of the concept described FIXME.
+
 
 ## License
 
-- because this uses RadioHead, the code I wrote is also released under GPL3.0
+- because it uses RadioHead, the code I wrote is also released under GPL3.0
 - other code that was copied remains under whatever license it was supposed to be
-
 # References
 
 I found these very useful:
 
 - Oregon protocol reference, including oscilloscope images of Oregon OOK manchester coding
-- this blog gave me the inspiration for the example that dumps RSSI vs time, amongst others
+- this blog JEELABS gave me the inspiration for the example that dumps RSSI vs time, amongst others
+- this blog FIXME was xxx
 
 # Environment
 
