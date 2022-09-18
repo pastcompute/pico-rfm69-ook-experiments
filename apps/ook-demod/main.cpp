@@ -19,8 +19,8 @@
 #include <Arduino.h>
 #include <stdio.h>
 #include <pico/stdlib.h>
-#include <RH_RF69.h>
-#include <RHSoftwareSPI.h>
+
+#include "../rfm69common.h"
 
 // With the arduino-compat shim, Arduino pins Dn is exactly the same as Pico SDK pin GPn
 
@@ -40,19 +40,12 @@
 #define RFM69_RST D21
 #define RFM69_IRQ D19
 
-#define RFM69_DIO2 D18
-
 #define RF_FREQUENCY_MHZ 433.92
 
 #define ONE_SECOND_US (1000 * 1000)
-#define OREGON_CHIPRATE (1024  * 2)
-#define FXOSC 32000000
 
 // This is the RSSI to use to trigger the logic analyser
 #define ESTIMATED_TRIGGER_RSSI_DB -90
-
-#define OOK_USE_FIXED_PEAK_DETECTOR false
-#define OOK_FIXED_PEAK_DETECT_THRESHOLD_DB 21
 
 int main() {
     // Trigger for the logic analyser, corresponds to the first pulse in RSSI
@@ -61,99 +54,9 @@ int main() {
 
     stdio_init_all();
 
-    RHSoftwareSPI spi;
-    spi.setPins(RFM69_MISO, RFM69_MOSI, RFM69_SCK);
-
-    RH_RF69 rf69module(RFM69_CS, RFM69_IRQ, spi);
-
-    // Reset the module first.
-    // From the SX1231 data sheet, pulse RST for 100 uS then wait at least 5 ms
-    // We go a bit longer to make sure
-    printf("SX1231 reset...\n");
-    pinMode(RFM69_RST, OUTPUT);
-    digitalWrite(RFM69_RST, HIGH); delay(10);
-    digitalWrite(RFM69_RST, LOW); delay(10);
-    if (!rf69module.init()) {
-        panic("Failed to initialise the RFM69 - probably this is a SPI problem");
-    }
-
-    // Tune the receiver
-    rf69module.setFrequency(RF_FREQUENCY_MHZ);
-
-    // Configure the modem
-    // Note, RadioHead has a function for this where you create a register structure
-    // and it can leverage bulk SPI write, but it only has a subset, and also wrties registers we dont even need
-    // Given we want to write other registers we may as well do all of them directly
-    // We could even have done the frequency, but the library for convenience
-    // converts MHz to the necessary bytes so we leave that be
-
-    // By doing it ourselves we can easier check against the SX1231 manual what is happening
-    // And document it here...
-
-    // Enable continuous OOK mode without bit synchronisation,
-    // because we are trying to receive OOK transmissions from anywhere
-    #define MODEM_CONFIG_OOK_CONT_NO_SYNC (\
-        RH_RF69_DATAMODUL_DATAMODE_CONT_WITHOUT_SYNC | \
-        RH_RF69_DATAMODUL_MODULATIONTYPE_OOK | \
-        RH_RF69_DATAMODUL_MODULATIONSHAPING_OOK_NONE)
-
-    // Set the bandwidth to 100kHz with 1% DC cancellation
-    // See SX1231 manual - Channel Filter - pages ~27,28
-    #define MODEM_CONFIG_BW_100k_DCC_1 0x89
-
-    // Set the bit rate to correspond to an Oregon V2/V3 protocol transmitter
-    // Although it was not obvious from the manual, this cleans up noise that remains otherwise
-    // For OOK this is the chip rate so 2x the bitrate
-    // Without setting the bitrate, the OOK decoder in Pulseview fails to work
-    // and you can see significant noise on each bit
-    #define OOK_BITRATE OREGON_CHIPRATE
-    const byte brLSB = (FXOSC / OOK_BITRATE) & 0xff;
-    const byte brMSB = ((FXOSC / OOK_BITRATE) >> 8) & 0xff;    
-
-    rf69module.spiWrite(RH_RF69_REG_02_DATAMODUL, MODEM_CONFIG_OOK_CONT_NO_SYNC);
-    rf69module.spiWrite(RH_RF69_REG_03_BITRATEMSB, brMSB);
-    rf69module.spiWrite(RH_RF69_REG_04_BITRATELSB, brLSB);
-    rf69module.spiWrite(RH_RF69_REG_19_RXBW, MODEM_CONFIG_BW_100k_DCC_1);
-
-    // To help calibrate our logic analyser, output a 1MHz frequency on DIO5 (This is FXOSC/32)
-    // Also the RSSI state on DIO0  + OOK on DIO2 ( which is the same for all values in continous)
-    // Map1 register: DIO 3-2-1-0 (LSB --> MSB pairs)
-    // Map2 register: DIO 5-4 (high nibble), fxosc (low 3)
-    // See Table21 in the SX1231 manual
-    byte dmap1 = rf69module.spiRead(RH_RF69_REG_25_DIOMAPPING1);
-    dmap1 = (dmap1 & 0xfc) | 2; // DIO0: bits 0-1 --> 10 == RSSI
-    rf69module.spiWrite(RH_RF69_REG_25_DIOMAPPING1, dmap1);
-
-    byte dmap2 = rf69module.spiRead(RH_RF69_REG_26_DIOMAPPING2);
-    dmap2 = (dmap2 & 0x38) | 5; // Clock out frequency bits 0-2 --> 101, DIO5 bits 7-6 --> 00 == clock 
-    rf69module.spiWrite(RH_RF69_REG_26_DIOMAPPING2, dmap2);
-
-    // With a good guess of the RSSI threshold value ESTIMATED_TRIGGER_RSSI_DB
-    // it is not necessary to use the peak detector
-    // However using the peak detector will eliminate junk beyond the valid transmissions
-    // as well as right nearby
-    if (OOK_USE_FIXED_PEAK_DETECTOR) {
-        printf("ASK threshold is fixed to %ddB above the floor\n", OOK_FIXED_PEAK_DETECT_THRESHOLD_DB);
-        rf69module.spiWrite(RH_RF69_REG_1B_OOKPEAK, 0); // bits 6-7 default 0x40 (peak), 00 (fixed), 10 (av)
-        rf69module.spiWrite(RH_RF69_REG_1D_OOKFIX, OOK_FIXED_PEAK_DETECT_THRESHOLD_DB);
-    } else {
-        printf("ASK threshold is relative to background RSSI\n");
-    }
-
-    // Read back the current operating mode & confirm we set the data mode succesfully
-    byte opMode = rf69module.spiRead(RH_RF69_REG_01_OPMODE);
-    byte datMode = rf69module.spiRead(RH_RF69_REG_02_DATAMODUL);
-    byte map1 = rf69module.spiRead(RH_RF69_REG_25_DIOMAPPING1);
-    byte map2 = rf69module.spiRead(RH_RF69_REG_26_DIOMAPPING2);
-
-    // Note, DIO2 is always OOK out in Continuous mode
-    printf("Actual OPMODE=%02x DATAMOD=%02x DIOMAP=%02x %02x\n", opMode, datMode, map1, map2);
-
-    // Setup to output demodulated OOK on DIO2
-    pinMode(RFM69_DIO2, INPUT_PULLDOWN);
-
-    printf("Start receiving.\n");
-    rf69module.setModeRx();
+    Rfm69Common rfm69;
+    rfm69.setPins(RFM69_MISO, RFM69_MOSI, RFM69_SCK, RFM69_CS, RFM69_IRQ, RFM69_RST);
+    rfm69.begin(RF_FREQUENCY_MHZ);
 
     // To help with triggering our logic analyser, we can now poll
     // what the module thinks the RSSI is, and use our own threshold.
@@ -172,7 +75,6 @@ int main() {
     // for accuracy, dont printf in the middle of it
     const int messageCaptureSamples = ONE_SECOND_US / rssiPoll_us * 2 / 5;
 
-
     absolute_time_t tNow = get_absolute_time();
     absolute_time_t tNextSecond = delayed_by_us(tNow, ONE_SECOND_US);
     absolute_time_t tNextPoll = delayed_by_us(tNow, rssiPoll_us);
@@ -187,7 +89,7 @@ int main() {
       // sample RSSI, see if we have a real signal for our lab setup
       if (time_reached(tNextPoll)) {
         tNextPoll = delayed_by_us(tNow, rssiPoll_us);
-        rssi = rf69module.spiRead(RH_RF69_REG_24_RSSIVALUE);
+        rssi = rfm69.readRSSIByte();
 
         if (!triggered && rssi <= triggerByte) {
             // trigger the Logic Analyser
