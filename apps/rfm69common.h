@@ -82,9 +82,9 @@ public:
             RH_RF69_DATAMODUL_MODULATIONTYPE_OOK |
             RH_RF69_DATAMODUL_MODULATIONSHAPING_OOK_NONE;
 
-        // Set the bandwidth to 100kHz with 1% DC cancellation
+        // Set the bandwidth to 100kHz with 4% DC cancellation
         // See SX1231 manual - Channel Filter - pages ~27,28
-        const uint8_t MODEM_CONFIG_BW_100k_DCC_1 = 0x89;
+        const uint8_t MODEM_CONFIG_BW_100k_DCC_1 = 0x49;
 
         // Set the bit rate to correspond to an Oregon V2/V3 protocol transmitter
         // Although it was not obvious from the manual, this cleans up noise that remains otherwise

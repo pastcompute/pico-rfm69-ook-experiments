@@ -21,12 +21,8 @@ fi
 
 if ! test -e lib/ookDecoder ; then
     echo -e "\e[34mFetching my fork of the ookDecoder library...\e[0m"
-    ( cd lib ; git clone https://github.com/Cactusbone/ookDecoder ; git checkout pico-rfm69-ook-experiments)
+    ( cd lib ; git clone https://github.com/pastcompute/ookDecoder.git ; git checkout pico-rfm69-ook-experiments)
 fi
-
-
-
-
 
 mkdir -p build
 cd build

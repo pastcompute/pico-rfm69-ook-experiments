@@ -70,6 +70,7 @@ I found these very useful:
 - Oregon protocol reference, including oscilloscope images of Oregon OOK manchester coding
 - this blog JEELABS gave me the inspiration for the example that dumps RSSI vs time, amongst others
 - this blog FIXME was xxx
+- I'm using the decoder code from https://github.com/sfrwmaker/WirelessOregonV2 to decode the packets
 
 # Environment
 
