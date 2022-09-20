@@ -22,11 +22,15 @@ I had had a system doing this using `rtl_433` with a USB RTL-SDR, but I really d
     - ensure DC cancellation = 4%, or reception can be noisy
     - don't underestimate the width of pulses (I widened the timing of the IRQ pulse / gap detector compared to the original ookDecoder repository that I'm using for Manchester decoding)
 
+This screenshot shows robust successful decoding of the sensor:
+![Sensor decoded successfully](images/oregon-decoded.png "Oregon Decoding")
+
 This screenshot shows PulseView successfully decoding a logic analyser capture of DIO2 from the module:
 
 ![PulseView successfully decoding a logic analyser capture of DIO2 from the module](images/pulseview_oregon_decoded.png "PulseView Oregon Decoding")
 
 This screenshot shows detections determined by polling the SX1231 RSSI value (using `apps/ook-scope` with only detections printed)
+
 ![ook-scope output of detections determined by polling the SX1231 RSSI value](images/ook-scope.png "Output from ook-scope program")
 
 This screenshot shows the spectrum captured using RTL-SDR on Android using SDRTouch - the bandwidth is the white rectangle, 100kHz wide (50kHz either side of 433.92MHz) - and the yellow blob is the transmission, so the vertical axis where the transmission is, is approx 380ms - you can see how if the bandwidth had been only set to 20kHz wide all the energy would have been outside of it. The good thing about this arrangement is that the frequency of the energy can drift and it wont matter.
