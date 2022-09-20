@@ -10,12 +10,17 @@ I had had a system doing this using `rtl_433` with a USB RTL-SDR, but I really d
 
 # Results
 
-- It is straightforward to use an RFM69HCW module (SX1231H chip) to demodulate Oregon weather sensor 433MHz ISM band transmissions
-- These can then be decoded using IRQ sampling of pulses and analysing the time difference between successive rising edges.
-- This should be adaptable to experiment with decoding other 'stuff' at 433Mhz using OOK (also known as ASK)
+- It was eventually straightforward to use an RFM69HCW module (SX1231H chip) to demodulate Oregon weather sensor 433MHz ISM band transmissions
+- These transmissions can be decoded using IRQ sampling of both edges of received pulses, and analysing the time difference between successive rising edges.
 - The Oregon THGN123N temperature and humidity sensor I was testing makes a transmission every apprpximately 39 seconds
 - It makes two transmissions each 187ms long with a gap of 10ms between them
-- Both are amenable to OOK manchester decoding in Sigrok however the second of this pair consistently always fails to decode as Oregon as there is an extra pulse decoded as binary 0 (short pulse) at the end of the preable
+- Both are amenable to OOK Manchester decoding in Sigrok, however often the second of this pair consistently failed to decode as Oregon; as there is an extra pulse decoded as binary 0 (short pulse) at the end of the preamble (although ultimately this may have been not enough DC removal, as my final oregon-decoder program eventually robustly decoded both messages in the pair)
+- These findings correspond with the Oregon decoding PDF which I read fairly late in the process
+- Optimal settings:
+    - ensure the bandwidth is >= 100kHz, or there is insufficient signal to noise ratio (SNR)
+    - make sure the chip rate is 2048 bps (if this is not configured at all, the sx1231 doesnt seem to output useful OOK)
+    - ensure DC cancellation = 4%, or reception can be noisy
+    - don't underestimate the width of pulses (I widened the timing of the IRQ pulse / gap detector compared to the original ookDecoder repository that I'm using for Manchester decoding)
 
 This screenshot shows PulseView successfully decoding a logic analyser capture of DIO2 from the module:
 
@@ -56,8 +61,7 @@ and the decoded message was identical (unsurprisingly)
 
 The program `apps/ook-scope` is a tool that samples and produces data that can be used to chart the RSSI over time. When the signal is sufficient, this should correlate with the DIO2 output. It is basically an implementation of the concept described FIXME. With some work this could be used to produce a continuous chart of RSSI and plot detections over a longer period, useful for identifying other nearby transmitters by analysing the intervals.
 
-The program `apps/oregon-decode` is hacked together from https://github.com/Cactusbone/ookDecoder which is a fork of https://github.com/phardy/WeatherStation, to decode the manchester coding and the packet values. One thing I noticed, is that the hex numbers are completely different from what PulseView shows, even though the end result is the same... oddly so far when I run this, it will pickup other junk packets, and for some reason every second, or two of three, packets are corrupted (this is packets on the 39s cadence) that otherwise are fine in Pulseview, so I think there might be a bug in the decoder (maybe on reset) - indeed there are some compiler warnings in relation to unused or invalid `switch` `case`'s so that might be a clue...
-
+The program `apps/oregon-decode` is hacked together from https://github.com/Cactusbone/ookDecoder which is a fork of https://github.com/phardy/WeatherStation, to decode the manchester coding and the packet values. Until I made this program a bit more robust, I noticed the hex numbers are completely different from what PulseView shows, even though the end result is the same... also it would pickup other junk packets, and for some reason every second, or two of three, packets are corrupted (this is packets on the 39s cadence) that otherwise are fine in Pulseview. In the end these issues were resolved by offsetting the sync by 4 bits in Pulseview, and making the pulse widths wider in the Manchester decoder.
 
 ## License
 
@@ -65,12 +69,14 @@ The program `apps/oregon-decode` is hacked together from https://github.com/Cact
 - other code that was copied remains under whatever license it was supposed to be
 # References
 
-I found these very useful:
+I found these useful:
 
-- Oregon protocol reference, including oscilloscope images of Oregon OOK manchester coding
-- this blog JEELABS gave me the inspiration for the example that dumps RSSI vs time, amongst others
-- this blog FIXME was xxx
+- Oregon protocol reference, including oscilloscope images of Oregon OOK manchester coding: http://wmrx00.sourceforge.net/Arduino/OregonScientific-RF-Protocols.pdf
+- SX1231 data sheet / manual: https://raw.githubusercontent.com/LowPowerLab/RFM69/master/RFM69_Datasheet_SX1231H_DS_Rev2.0_STD.pdf
+- this blog https://jeelabs.org/2010/04/13/an-ook-scope/index.html gave me the inspiration for the example that dumps RSSI vs time, amongst others
 - I'm using the decoder code from https://github.com/sfrwmaker/WirelessOregonV2 to decode the packets
+- about Manchester coding: https://www.digikey.com.au/en/blog/old-but-still-useful-the-manchester-code
+- another blog https://web-relays.com/en/blog/arduino-code-to-receive-data-from-an-oregon-scientific-weather-station/
 
 # Environment
 
