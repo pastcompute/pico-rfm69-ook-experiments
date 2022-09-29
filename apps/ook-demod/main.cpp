@@ -29,16 +29,7 @@
 
 #define LOGIC_TRIGGER D16
 
-// In my testing, I happened to use these Pico Pins, and software SPI
-// I havent tried adapting RadioHead to use the pico hardware SPI as yet
-// Connect these to the RFM69HCW module
-#define RFM69_MISO D12
-#define RFM69_MOSI D15
-#define RFM69_SCK D14
-#define RFM69_CS D13
-
-#define RFM69_RST D21
-#define RFM69_IRQ D19
+#include "../picopins.h"
 
 #define RF_FREQUENCY_MHZ 433.92
 

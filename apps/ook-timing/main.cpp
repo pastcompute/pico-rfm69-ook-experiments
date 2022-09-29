@@ -9,17 +9,7 @@
 
 // See ook-demod for a description of these common constants
 
-#define LOGIC_TRIGGER D16
-
-#define RFM69_MISO D12
-#define RFM69_MOSI D15
-#define RFM69_SCK D14
-#define RFM69_CS D13
-
-#define RFM69_RST D21
-#define RFM69_IRQ D19
-
-#define RFM69_DIO2 D18
+#include "../picopins.h"
 
 #define RF_FREQUENCY_MHZ 433.92
 
