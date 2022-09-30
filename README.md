@@ -21,6 +21,7 @@ I had had a system doing this using `rtl_433` with a USB RTL-SDR, but I really d
     - make sure the chip rate is 2048 bps (if this is not configured at all, the sx1231 doesnt seem to output useful OOK)
     - ensure DC cancellation = 4%, or reception can be noisy
     - don't underestimate the width of pulses (I widened the timing of the IRQ pulse / gap detector compared to the original ookDecoder repository that I'm using for Manchester decoding)
+    - make sure there is an antenna on the module! I clipped on a logic probe clip, anything will do - the difference is chalk and cheese. With the antenna, packets are never missed.
 
 This screenshot shows robust successful decoding of the sensor:
 ![Sensor decoded successfully](images/oregon-decoded.png "Oregon Decoding")

@@ -113,11 +113,6 @@ int main() {
     rfm69.setPins(RFM69_MISO, RFM69_MOSI, RFM69_SCK, RFM69_CS, RFM69_IRQ, RFM69_RST);
     rfm69.begin(RF_FREQUENCY_MHZ);
 
-    absolute_time_t tNow = get_absolute_time();
-    absolute_time_t tNextSecond = delayed_by_us(tNow, ONE_SECOND_US);
-    int n=0;
-    
-
     printf("Start decoding...\n");
     OregonDecoderV2 orscV2;
     extern void reportSerial (const char* s, class DecodeOOK& decoder);
@@ -129,7 +124,10 @@ int main() {
     sharedData.nextPulseLength_us = 0;
     attachInterrupt(digitalPinToInterrupt(RFM69_DIO2), dio2InterruptHandler, CHANGE);
 
-    auto t0 = to_ms_since_boot(get_absolute_time());
+    absolute_time_t tNow = get_absolute_time();
+    absolute_time_t tNextSecond = delayed_by_us(tNow, ONE_SECOND_US);
+    int n=0;
+    auto t0 = to_ms_since_boot(tNow);
     uint8_t channel;
     uint8_t rollingCode;
     int16_t temp;
@@ -261,7 +259,3 @@ void reportSerial (const char* s, class DecodeOOK& decoder) {
     // Serial.print(millis() / 1000);
     Serial.println();
 }
-
-// OK. THis is buggy, it misses every second
-// e.g. 78s cadence, not 39
-// The Wless version was rubbish but it at least found a preabmle every 39 s
