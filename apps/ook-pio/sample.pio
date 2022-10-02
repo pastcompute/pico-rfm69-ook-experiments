@@ -1,0 +1,62 @@
+; simple PIO code to sample whatever is on the DIO2 pin
+
+.program sample
+
+; running at the rate we set it up in C
+; 125 MHz clock, divider of 15625 --> 125uS per pio clock cycle
+; we set this program up to take 125 cycles to wrap, thus we get a new bit every 15.625ms
+; and thus 32 bit word once per half second
+;
+; sanity check: in theory: 0.5 second :=> 32 x 1/(125e6 / 15625) x (31+31+31+31+1) 
+; each pio clock is 8000uS
+
+public again:
+IN PINS, 1 [30]  ; shift DIO2 into Input Shift Register and delay additional 30 cycles
+PUSH IfFull      ; last cycle of 125. if we have 32 bits then push to the fifo, and block if necessary (but hopefully we wont need to)
+NOP [30]         ; delay a further 31 in total
+NOP [30]         ; delay a further 31 in total
+NOP [30]         ; delay a further 31 in total
+;jmp again        ; this adds 4ms (1 pio clock) c/f .wrap. as we scale the divider up, this multiplies...
+; somehow .wrap doesnt take a cycle
+.wrap            ; start again
+
+% c-sdk {
+#include "hardware/clocks.h"
+#include "hardware/gpio.h"
+
+static inline void sample_program_init(PIO pio, uint sm, uint offset, uint pin) {
+    pio_sm_config c = sample_program_get_default_config(offset);
+
+    // Map the state machine's IN pin group to one pin, namely the `pin`
+    // parameter to this function.
+    sm_config_set_out_pins(&c, pin, 1);
+
+    // Set this pin's GPIO function (connect PIO to the pad)
+    pio_gpio_init(pio, pin);
+    gpio_pull_down(pin);
+
+    // Set the pin direction to input at the PIO
+    pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, false);
+
+    // Set up 32-bit shift register - shifts right, autopush disabled
+    sm_config_set_in_shift(&c, true, false, 32);
+    sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_RX);
+
+    // Divider - rate x 1/2 second / 32 / 125
+    // float div = clock_get_hz(clk_sys) * 1 / 2 / 32 / 125;
+
+    // sm_config_set_clkdiv_int_frac(&c, 15625, 0);
+
+    // one second
+    sm_config_set_clkdiv_int_frac(&c, 15625*2, 0);
+
+    // divider for 2 seconds instead of 0.5s
+    //sm_config_set_clkdiv_int_frac(&c, 15625*4, 0);
+
+    // Load our configuration, and jump to the start of the program
+    pio_sm_init(pio, sm, offset, &c);
+
+    // Set the state machine running
+    pio_sm_set_enabled(pio, sm, true);
+}
+%}
