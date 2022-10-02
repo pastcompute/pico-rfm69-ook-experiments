@@ -11,7 +11,7 @@
 
 #include "../picopins.h"
 
-#include "sample.pio.h"
+#include "metronome.pio.h"
 
 // See ook-demod for a description of these common constants
 
@@ -34,9 +34,9 @@ int main() {
 
     // Setup sampler PIO program on DIO2
     PIO pio = pio0;
-    uint offset = pio_add_program(pio, &sample_program);
+    uint offset = pio_add_program(pio, &metronome_program);
     uint sm = pio_claim_unused_sm(pio, true);
-    sample_program_init(pio, sm, offset, RFM69_DIO2);
+    metronome_program_init(pio, sm, offset, RFM69_DIO2);
 
     printf("Start...\n");
     while (true) {

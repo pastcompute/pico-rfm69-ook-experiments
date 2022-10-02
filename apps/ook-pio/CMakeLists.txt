@@ -3,7 +3,7 @@ add_executable(
         main.cpp
         )
 
-pico_generate_pio_header(app_ook-pio ${CMAKE_CURRENT_LIST_DIR}/sample.pio)
+pico_generate_pio_header(app_ook-pio ${CMAKE_CURRENT_LIST_DIR}/metronome.pio)
 
 target_link_libraries(
         app_ook-pio

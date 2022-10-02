@@ -1,6 +1,6 @@
 ; simple PIO code to sample whatever is on the DIO2 pin
 
-.program sample
+.program metronome
 
 ; running at the rate we set it up in C
 ; 125 MHz clock, divider of 15625 --> 125uS per pio clock cycle
@@ -24,8 +24,8 @@ NOP [30]         ; delay a further 31 in total
 #include "hardware/clocks.h"
 #include "hardware/gpio.h"
 
-static inline void sample_program_init(PIO pio, uint sm, uint offset, uint pin) {
-    pio_sm_config c = sample_program_get_default_config(offset);
+static inline void metronome_program_init(PIO pio, uint sm, uint offset, uint pin) {
+    pio_sm_config c = metronome_program_get_default_config(offset);
 
     // Map the state machine's IN pin group to one pin, namely the `pin`
     // parameter to this function.
