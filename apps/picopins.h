@@ -9,10 +9,10 @@
 
 #define LOGIC_TRIGGER D16
 
-#define RFM69_MISO D7
-#define RFM69_MOSI D8
+#define RFM69_MISO D4
+#define RFM69_MOSI D7
 #define RFM69_SCK D6
-#define RFM69_CS D9
+#define RFM69_CS D5
 
 #define RFM69_RST D12
 #define RFM69_IRQ D10
